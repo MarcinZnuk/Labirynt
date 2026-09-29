@@ -3,19 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Labirynt</title>
+  <title>Labirynt w kukurydzy</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <main class="app">
     <section class="screen" data-screen="menu">
-      <h1 class="title">Labirynt</h1>
+      <h1 class="title">Labirynt <small>w kukurydzy</small></h1>
       <div class="menu">
         <button type="button" data-action="newGame" data-autofocus>Nowa gra</button>
         <button type="button" data-action="continue" id="continue-btn" hidden>Kontynuuj</button>
         <button type="button" data-action="records">Rekordy</button>
         <button type="button" data-action="toggleTheme" id="theme-btn">Motyw: ciemny</button>
       </div>
+      <p class="hint">Doprowadź ludzika do tabliczki „Wyjście” w prawym dolnym rogu pola.</p>
       <p class="hint">Strzałki lub WASD - ruch. Esc lub P - pauza. N - nowa plansza.</p>
     </section>
 
@@ -31,7 +32,7 @@
         </span>
       </header>
       <div class="board-wrap" id="board-wrap">
-        <canvas id="board" aria-label="Plansza labiryntu"></canvas>
+        <canvas id="board" aria-label="Labirynt w kukurydzy. Wyjście jest w prawym dolnym rogu."></canvas>
         <div class="overlay" id="pause-overlay" hidden>
           <p class="overlay-title">Pauza</p>
           <button type="button" data-action="resume" id="resume-btn">Wznów</button>
