@@ -4,14 +4,22 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Labirynt</title>
+  <meta name="theme-color" content="#121c18">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:wght@400;500;700&display=swap">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <main class="app">
     <section class="screen" data-screen="menu">
       <h1 class="title">Labirynt</h1>
+      <p class="tagline">Znajdź drogę przez ogród do bramy.</p>
+      <div class="hero-wrap">
+        <canvas id="hero" aria-hidden="true"></canvas>
+      </div>
       <div class="menu">
-        <button type="button" data-action="newGame" data-autofocus>Nowa gra</button>
+        <button type="button" class="primary" data-action="newGame" data-autofocus>Nowa gra</button>
         <button type="button" data-action="continue" id="continue-btn" hidden>Kontynuuj</button>
         <button type="button" data-action="records">Rekordy</button>
         <button type="button" data-action="toggleTheme" id="theme-btn">Motyw: ciemny</button>
@@ -21,9 +29,9 @@
 
     <section class="screen" data-screen="game" hidden>
       <header class="hud">
-        <span>Poziom <strong id="hud-level">1</strong></span>
-        <span>Czas <strong id="hud-time">0:00.0</strong></span>
-        <span>Ruchy <strong id="hud-moves">0</strong></span>
+        <span class="hud-stat">Poziom <strong id="hud-level">1</strong></span>
+        <span class="hud-stat">Czas <strong id="hud-time">0:00.0</strong></span>
+        <span class="hud-stat">Ruchy <strong id="hud-moves">0</strong></span>
         <span class="hud-buttons">
           <button type="button" data-action="pause">Pauza</button>
           <button type="button" data-action="restart">Restart</button>
@@ -34,7 +42,7 @@
         <canvas id="board" aria-label="Plansza labiryntu"></canvas>
         <div class="overlay" id="pause-overlay" hidden>
           <p class="overlay-title">Pauza</p>
-          <button type="button" data-action="resume" id="resume-btn">Wznów</button>
+          <button type="button" class="primary" data-action="resume" id="resume-btn">Wznów</button>
           <button type="button" data-action="menu">Menu</button>
         </div>
       </div>
@@ -56,7 +64,7 @@
       </dl>
       <p class="record" id="done-record" hidden></p>
       <div class="menu">
-        <button type="button" data-action="next" data-autofocus>Dalej</button>
+        <button type="button" class="primary" data-action="next" data-autofocus>Dalej</button>
         <button type="button" data-action="menu">Menu</button>
       </div>
     </section>
@@ -83,6 +91,7 @@
   <script src="js/storage.js"></script>
   <script src="js/input.js"></script>
   <script src="js/render.js"></script>
+  <script src="js/hero.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/main.js"></script>
 </body>

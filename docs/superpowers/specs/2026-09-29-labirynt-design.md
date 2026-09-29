@@ -137,6 +137,7 @@ js/maze.js        - Labirynt.maze: generowanie labiryntu, sprawdzanie przejść
 js/game.js        - Labirynt.game: stan poziomu, ruch, czas, ukończenie
 js/input.js       - Labirynt.input: klawiatura, krzyżak, gesty -> polecenia ruchu
 js/render.js      - Labirynt.render: rysowanie na Canvas, skalowanie
+js/hero.js        - Labirynt.hero: animowana miniatura labiryntu w menu
 js/storage.js     - Labirynt.storage: odczyt i zapis postępu
 js/ui.js          - Labirynt.ui: przełączanie ekranów, HUD, motyw
 js/main.js        - złożenie modułów, pętla gry

@@ -8,6 +8,13 @@
     assertEqual(R.cellSize(336, 600, 25, 25), 13);
   });
 
+  test('render: fitCanvas z marginesem żywopłotu nadal daje pole 13 px dla 25x25 na 360 px', () => {
+    const canvas = { style: {} };
+    const view = R.fitCanvas(canvas, 336, 600, { width: 25, height: 25 }, 1);
+    assert(view.cell >= 13, 'pole ' + view.cell);
+    assertEqual(view.cssWidth, view.cell * 25 + 2 * view.origin);
+  });
+
   test('render: rozmiar pola wyznacza węższy wymiar', () => {
     assertEqual(R.cellSize(1000, 204, 10, 10), 20);
     assertEqual(R.cellSize(204, 1000, 10, 10), 20);

@@ -174,6 +174,7 @@
   L.ui.applyTheme(progress.theme);
   L.ui.setContinueVisible(progress.unlocked > 1);
   if (!ctx) L.ui.showCanvasError();
+  L.hero.start(document.getElementById('hero'), () => progress.theme, reducedMotion);
 
   window.addEventListener('resize', fit);
   document.addEventListener('visibilitychange', () => {

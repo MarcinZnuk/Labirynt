@@ -3,10 +3,29 @@
 
   const PAD = 2;
   const MIN_CELL = 4;
+  // Dodatkowy margines płótna na połowę grubości zewnętrznego żywopłotu.
+  // Najwyżej 3 px: przy 25x25 na ekranie 360 px pole musi mieć co najmniej 13 px.
+  const EDGE = 3;
+  const MAX_HEDGE = 2 * (PAD + EDGE);
 
+  // Ogród: żwirowa ścieżka, żywopłot ze światłem i cieniem, latarnia gracza, księżycowa brama wyjścia.
   const THEMES = {
-    dark: { background: '#10141c', wall: '#e6e9ef', player: '#4cc2ff', exit: '#5ee07a' },
-    light: { background: '#f7f7f4', wall: '#1d2330', player: '#0a66c2', exit: '#1a8f3c' },
+    dark: {
+      background: '#121c18',
+      wall: '#7fb26a',
+      wallShade: '#070d0a',
+      wallLight: '#a9d48f',
+      player: '#f4b942',
+      exit: '#c8b8ff',
+    },
+    light: {
+      background: '#dcd8c8',
+      wall: '#2e5530',
+      wallShade: '#a9a592',
+      wallLight: '#4c7a48',
+      player: '#a34e00',
+      exit: '#5b3fa8',
+    },
   };
 
   function cellSize(availWidth, availHeight, cols, rows) {
@@ -27,46 +46,31 @@
     return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
   }
 
+  function alpha(hex, a) {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    return `rgba(${r}, ${g}, ${b}, ${a})`;
+  }
+
   // Rozmiar CSS z całkowitą liczbą pikseli na pole, rozdzielczość płótna pomnożona przez dpr.
   function fitCanvas(canvas, availWidth, availHeight, maze, dpr) {
-    const cell = cellSize(availWidth, availHeight, maze.width, maze.height);
-    const cssWidth = cell * maze.width + 2 * PAD;
-    const cssHeight = cell * maze.height + 2 * PAD;
+    const cell = cellSize(availWidth - 2 * EDGE, availHeight - 2 * EDGE, maze.width, maze.height);
+    const origin = PAD + EDGE;
+    const cssWidth = cell * maze.width + 2 * origin;
+    const cssHeight = cell * maze.height + 2 * origin;
     canvas.style.width = cssWidth + 'px';
     canvas.style.height = cssHeight + 'px';
     canvas.width = Math.round(cssWidth * dpr);
     canvas.height = Math.round(cssHeight * dpr);
-    return { cell, dpr, cssWidth, cssHeight };
+    return { cell, dpr, cssWidth, cssHeight, origin };
   }
 
-  function draw(ctx, view, maze, pos, theme) {
-    const colors = THEMES[theme] || THEMES.dark;
-    const cell = view.cell;
+  function wallPath(ctx, maze, cell, origin, dx, dy) {
     const WALL = L.maze.WALL;
-
-    ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
-    ctx.fillStyle = colors.background;
-    ctx.fillRect(0, 0, view.cssWidth, view.cssHeight);
-
-    const inset = Math.max(1, Math.round(cell * 0.2));
-    ctx.fillStyle = colors.exit;
-    ctx.fillRect(
-      PAD + (maze.width - 1) * cell + inset,
-      PAD + (maze.height - 1) * cell + inset,
-      cell - 2 * inset,
-      cell - 2 * inset
-    );
-
-    // Górna i lewa ściana każdego pola oraz prawa i dolna krawędź planszy.
-    // Grubość najwyżej 2 * PAD, żeby zewnętrzne ściany nie wychodziły poza płótno.
-    ctx.strokeStyle = colors.wall;
-    ctx.lineWidth = Math.max(1.5, Math.min(2 * PAD, cell / 8));
-    ctx.lineCap = 'square';
     ctx.beginPath();
     for (let y = 0; y < maze.height; y++) {
       for (let x = 0; x < maze.width; x++) {
-        const left = PAD + x * cell;
-        const top = PAD + y * cell;
+        const left = origin + x * cell + dx;
+        const top = origin + y * cell + dy;
         if (L.maze.hasWall(maze, x, y, WALL.N)) {
           ctx.moveTo(left, top);
           ctx.lineTo(left + cell, top);
@@ -85,11 +89,70 @@
         }
       }
     }
-    ctx.stroke();
+  }
 
+  function draw(ctx, view, maze, pos, theme) {
+    const colors = THEMES[theme] || THEMES.dark;
+    const cell = view.cell;
+    const origin = view.origin === undefined ? PAD : view.origin;
+    const center = (v) => origin + (v + 0.5) * cell;
+
+    ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
+    ctx.fillStyle = colors.background;
+    ctx.fillRect(0, 0, view.cssWidth, view.cssHeight);
+
+    // Brama wyjścia: poświata i pierścień, żeby wyjście było widać także w cieniu żywopłotu.
+    const ex = center(maze.width - 1);
+    const ey = center(maze.height - 1);
+    const halo = ctx.createRadialGradient(ex, ey, 0, ex, ey, cell * 0.9);
+    halo.addColorStop(0, alpha(colors.exit, 0.45));
+    halo.addColorStop(1, alpha(colors.exit, 0));
+    ctx.fillStyle = halo;
+    ctx.fillRect(ex - cell, ey - cell, cell * 2, cell * 2);
+    ctx.strokeStyle = colors.exit;
+    ctx.lineWidth = Math.max(1.5, cell * 0.08);
+    ctx.beginPath();
+    ctx.arc(ex, ey, cell * 0.28, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = colors.exit;
+    ctx.beginPath();
+    ctx.arc(ex, ey, cell * 0.12, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Żywopłot: cień przesunięty w dół, bryła, jaśniejszy grzbiet.
+    const hedge = Math.max(1.5, Math.min(MAX_HEDGE, cell * 0.3));
+    const drop = Math.max(1, hedge * 0.35);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    wallPath(ctx, maze, cell, origin, 0, drop);
+    ctx.strokeStyle = colors.wallShade;
+    ctx.lineWidth = hedge;
+    ctx.stroke();
+    wallPath(ctx, maze, cell, origin, 0, 0);
+    ctx.strokeStyle = colors.wall;
+    ctx.stroke();
+    if (hedge >= 5) {
+      wallPath(ctx, maze, cell, origin, 0, -hedge * 0.18);
+      ctx.strokeStyle = colors.wallLight;
+      ctx.lineWidth = hedge * 0.3;
+      ctx.stroke();
+    }
+
+    // Latarnia gracza: ciepła poświata sięgająca sąsiednich pól.
+    const px = center(pos.x);
+    const py = center(pos.y);
+    const glow = ctx.createRadialGradient(px, py, cell * 0.1, px, py, cell * 1.6);
+    glow.addColorStop(0, alpha(colors.player, theme === 'light' ? 0.22 : 0.38));
+    glow.addColorStop(1, alpha(colors.player, 0));
+    ctx.fillStyle = glow;
+    ctx.fillRect(px - cell * 1.6, py - cell * 1.6, cell * 3.2, cell * 3.2);
     ctx.fillStyle = colors.player;
     ctx.beginPath();
-    ctx.arc(PAD + (pos.x + 0.5) * cell, PAD + (pos.y + 0.5) * cell, cell * 0.32, 0, Math.PI * 2);
+    ctx.arc(px, py, cell * 0.26, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = alpha('#ffffff', theme === 'light' ? 0.35 : 0.6);
+    ctx.beginPath();
+    ctx.arc(px - cell * 0.07, py - cell * 0.07, cell * 0.09, 0, Math.PI * 2);
     ctx.fill();
   }
 
