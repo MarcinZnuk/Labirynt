@@ -69,6 +69,8 @@
   function applyTheme(theme) {
     doc.documentElement.dataset.theme = theme;
     el.themeBtn.textContent = 'Motyw: ' + (theme === 'light' ? 'jasny' : 'ciemny');
+    const meta = doc.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', (L.render.THEMES[theme] || L.render.THEMES.dark).background);
   }
 
   function setText(node, text) {
