@@ -44,6 +44,17 @@
     assertEqual(covering.length, 0);
   });
 
+  test('render: ludzik stoi na ścieżce, a nie na czubku rzędu kukurydzy', () => {
+    for (const [w, h, size] of [[336, 600, 25], [1000, 800, 8], [1600, 900, 12]]) {
+      const view = R.fitCanvas({ style: {} }, w, h, { width: size, height: size }, 1);
+      const feet = R.walkerFeet(view, { x: 2, y: 3 });
+      const northBase = view.originY + 3 * view.cell + view.thick / 2;
+      const southTop = view.originY + 4 * view.cell - view.thick / 2 - view.depth;
+      assert(feet.y - feet.shadowRy >= northBase, 'stopy w północnym rzędzie, pole ' + view.cell);
+      assert(feet.y + feet.shadowRy <= southTop, 'stopy na południowym rzędzie, pole ' + view.cell);
+    }
+  });
+
   for (const name of Object.keys(R.THEMES)) {
     test(`render: motyw ${name} - ściany mają kontrast co najmniej 4.5:1`, () => {
       const c = R.THEMES[name];

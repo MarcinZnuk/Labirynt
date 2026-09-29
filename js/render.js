@@ -7,9 +7,11 @@
   // Pseudo-3D: proporcje względem boku pola. Rzędy kukurydzy mają wysokość DEPTH,
   // czubki są przesunięte w prawo o SKEW (widać ścianę zachodnią i południową),
   // rząd ma grubość THICK, a pod planszą zostaje pas na tabliczkę "Wyjście".
-  const DEPTH = 0.5;
-  const SKEW = 0.2;
-  const THICK = 0.32;
+  // Z korytarza widać pas ziemi o szerokości 1 - THICK - DEPTH pola: niższe i cieńsze
+  // rzędy zostawiają miejsce, w którym ludzik stoi na ścieżce, a nie na kukurydzy.
+  const DEPTH = 0.34;
+  const SKEW = 0.14;
+  const THICK = 0.22;
   const SIGN_ROWS = 0.9;
   const SIGN_PX = 12;
   const SIGN_TEXT = 'Wyjście';
@@ -361,18 +363,31 @@
     return layer;
   }
 
-  // Ludzik w słomkowym kapeluszu; stopy stoją nieco poniżej środka pola, bo widok jest z ukosa.
+  // Punkt, w którym ludzik stoi: w widocznym pasie ziemi między północnym rzędem
+  // (jego podstawa) a czubkiem południowego rzędu, który przy widoku z ukosa zachodzi na pole.
+  function walkerFeet(view, pos) {
+    const floorTop = view.thick / 2;
+    const floorBottom = view.cell - view.thick / 2 - view.depth;
+    return {
+      x: view.originX + (pos.x + 0.5) * view.cell,
+      y: view.originY + pos.y * view.cell + floorTop + (floorBottom - floorTop) * 0.6,
+      shadowRy: view.cell * 0.06,
+    };
+  }
+
+  // Ludzik w słomkowym kapeluszu.
   function drawWalker(c, view, pos, colors, actor) {
     const cell = view.cell;
-    const x = view.originX + (pos.x + 0.5) * cell;
-    const y = view.originY + (pos.y + 0.5) * cell + cell * 0.18;
-    const tall = cell * 0.9;
+    const feet = walkerFeet(view, pos);
+    const x = feet.x;
+    const y = feet.y;
+    const tall = cell * 0.8;
     const facing = actor.facing || 'down';
     const side = facing === 'left' ? -1 : facing === 'right' ? 1 : 0;
     const swing = actor.moving ? Math.sin(actor.phase * Math.PI * 2) : 0;
 
     c.fillStyle = colors.shadow;
-    ellipse(c, x, y, cell * 0.24, cell * 0.08, 0);
+    ellipse(c, x, y, cell * 0.22, feet.shadowRy, 0);
 
     const hip = y - tall * 0.36;
     const shoulder = y - tall * 0.64;
@@ -472,5 +487,5 @@
     drawWalker(ctx, view, pos, colors, actor || {});
   }
 
-  L.render = { PAD, THEMES, SIGN_TEXT, cellSize, contrastRatio, fitCanvas, wallBoxes, draw };
+  L.render = { PAD, THEMES, SIGN_TEXT, cellSize, contrastRatio, fitCanvas, wallBoxes, walkerFeet, draw };
 })(window.Labirynt = window.Labirynt || {});
