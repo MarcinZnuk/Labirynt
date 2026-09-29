@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pl" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Labirynt</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="app">
+    <section class="screen" data-screen="menu">
+      <h1 class="title">Labirynt</h1>
+      <div class="menu">
+        <button type="button" data-action="newGame" data-autofocus>Nowa gra</button>
+        <button type="button" data-action="continue" id="continue-btn" hidden>Kontynuuj</button>
+        <button type="button" data-action="records">Rekordy</button>
+        <button type="button" data-action="toggleTheme" id="theme-btn">Motyw: ciemny</button>
+      </div>
+      <p class="hint">Strzałki lub WASD - ruch. Esc lub P - pauza. N - nowa plansza.</p>
+    </section>
+
+    <section class="screen" data-screen="game" hidden>
+      <header class="hud">
+        <span>Poziom <strong id="hud-level">1</strong></span>
+        <span>Czas <strong id="hud-time">0:00.0</strong></span>
+        <span>Ruchy <strong id="hud-moves">0</strong></span>
+        <span class="hud-buttons">
+          <button type="button" data-action="pause">Pauza</button>
+          <button type="button" data-action="restart">Restart</button>
+          <button type="button" data-action="newMaze">Nowa plansza</button>
+        </span>
+      </header>
+      <div class="board-wrap" id="board-wrap">
+        <canvas id="board" aria-label="Plansza labiryntu"></canvas>
+        <div class="overlay" id="pause-overlay" hidden>
+          <p class="overlay-title">Pauza</p>
+          <button type="button" data-action="resume" id="resume-btn">Wznów</button>
+          <button type="button" data-action="menu">Menu</button>
+        </div>
+      </div>
+      <div class="dpad" id="dpad" aria-hidden="true">
+        <button type="button" tabindex="-1" data-dir="up" class="dpad-up">&#9650;</button>
+        <button type="button" tabindex="-1" data-dir="left" class="dpad-left">&#9664;</button>
+        <button type="button" tabindex="-1" data-dir="down" class="dpad-down">&#9660;</button>
+        <button type="button" tabindex="-1" data-dir="right" class="dpad-right">&#9654;</button>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="done" hidden>
+      <h2>Poziom <span id="done-level">1</span> ukończony</h2>
+      <dl class="stats">
+        <dt>Czas</dt>
+        <dd id="done-time">0:00.0</dd>
+        <dt>Ruchy</dt>
+        <dd id="done-moves">0</dd>
+      </dl>
+      <p class="record" id="done-record" hidden></p>
+      <div class="menu">
+        <button type="button" data-action="next" data-autofocus>Dalej</button>
+        <button type="button" data-action="menu">Menu</button>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="records" hidden>
+      <h2>Rekordy</h2>
+      <table class="records" id="records-table" hidden>
+        <thead>
+          <tr><th>Poziom</th><th>Najlepszy czas</th><th>Najmniej ruchów</th></tr>
+        </thead>
+        <tbody id="records-body"></tbody>
+      </table>
+      <p class="hint" id="records-empty">Brak rekordów.</p>
+      <div class="menu">
+        <button type="button" data-action="back" data-autofocus>Wróć</button>
+        <button type="button" data-action="clearRecords">Wyczyść rekordy</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/rng.js"></script>
+  <script src="js/maze.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
