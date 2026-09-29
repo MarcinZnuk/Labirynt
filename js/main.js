@@ -16,6 +16,7 @@
   let anim = null; // { fromX, fromY, start }: trwająca animacja ruchu
   let queued = null; // jedno polecenie ruchu wydane w trakcie animacji
   let finishHandled = false;
+  let facing = 'down'; // w którą stronę patrzy ludzik
 
   const input = L.input.bind({
     dpad: document.getElementById('dpad'),
@@ -40,6 +41,7 @@
     anim = null;
     queued = null;
     finishHandled = false;
+    facing = 'down';
   }
 
   function startLevel(level) {
@@ -52,6 +54,8 @@
 
   function doMove(dir) {
     const now = performance.now();
+    // Ludzik odwraca się także przy próbie wejścia w kukurydzę: widać, że klawisz zadziałał.
+    facing = dir;
     const next = L.game.move(state, dir, now);
     if (next === state) return;
     anim = reducedMotion.matches ? null : { fromX: state.x, fromY: state.y, start: now };
@@ -117,8 +121,11 @@
     const now = performance.now();
     let px = state.x;
     let py = state.y;
+    let phase = 0;
+    const moving = Boolean(anim);
     if (anim) {
       const t = Math.min(1, (now - anim.start) / MOVE_MS);
+      phase = t;
       px = anim.fromX + (state.x - anim.fromX) * t;
       py = anim.fromY + (state.y - anim.fromY) * t;
       if (t >= 1) {
@@ -128,7 +135,7 @@
         if (next && !state.paused && !state.finished) doMove(next);
       }
     }
-    L.render.draw(ctx, view, state.maze, { x: px, y: py }, progress.theme);
+    L.render.draw(ctx, view, state.maze, { x: px, y: py }, progress.theme, { facing, moving, phase });
     L.ui.updateHud({ level: state.level, timeMs: L.game.elapsed(state, now), moves: state.moves });
     if (state.finished && !anim && !finishHandled) finishLevel(now);
   }
