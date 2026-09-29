@@ -1,7 +1,7 @@
 # Labirynt - specyfikacja gry w HTML
 
 Data: 2026-09-29
-Status: zaakceptowana, przed planem prac
+Status: zaakceptowana, uzgodniona z planem prac `docs/superpowers/plans/2026-09-29-labirynt.md`
 
 ## 1. Cel i kryterium sukcesu
 
@@ -64,19 +64,27 @@ Czysty JavaScript i Canvas 2D, kilka plików, bez zależności i bez kroku budow
   po 200 ms.
 - Wejście na pole wyjścia kończy poziom i zatrzymuje zegar.
 - Zegar startuje przy pierwszym udanym ruchu na poziomie, nie przy wyświetleniu planszy.
-- HUD pokazuje: numer poziomu, czas (format `m:ss.d`), liczbę ruchów oraz przyciski Pauza
-  i Restart.
+- HUD pokazuje: numer poziomu, czas (format `m:ss.d`), liczbę ruchów oraz przyciski Pauza,
+  Restart i Nowa plansza.
 - Restart poziomu przywraca gracza na start, zeruje czas i ruchy, zachowuje ten sam labirynt.
+- Nowa plansza (przycisk w HUD albo klawisz N) losuje nowe ziarno dla tego samego poziomu
+  i generuje nowy labirynt tego samego rozmiaru. Gracz wraca na start, czas i ruchy są zerowane,
+  pauza zostaje wyłączona. Działa bez potwierdzenia, także w pauzie. Nie zmienia rekordów ani
+  odblokowanych poziomów.
 - Pauza: klawisz Esc albo P, przycisk w HUD oraz automatycznie, gdy karta przestaje być widoczna
   (`visibilitychange`). W pauzie zegar stoi, a ruch jest zablokowany. Wznowienie tym samym
   klawiszem lub przyciskiem.
 
 ### 4.3 Sterowanie
 
-- Klawiatura: strzałki oraz W, A, S, D (niezależnie od wielkości liter).
+- Klawiatura: strzałki oraz W, A, S, D do ruchu, Esc i P do pauzy, N do nowej planszy. Klawisze rozpoznawane po `event.code` (fizyczne
+  położenie), więc działają niezależnie od wielkości liter, Caps Lock i układu klawiatury.
 - Klawisze sterujące nie przewijają strony (`preventDefault` dla strzałek i spacji w trakcie
   gry).
-- Urządzenia dotykowe (wykrywane przez `matchMedia('(pointer: coarse)')`): krzyżak na ekranie
+- Powtarzanie ruchu jest własne, nie systemowe. Przy dwóch trzymanych kierunkach aktywny jest
+  ostatnio naciśnięty. Puszczenie go wraca do kierunku wciąż trzymanego. Utrata fokusu okna
+  lub ukrycie karty zwalnia wszystkie klawisze.
+- Urządzenia dotykowe (wykrywane regułą CSS `@media (pointer: coarse)`): krzyżak na ekranie
   pod planszą, obsługiwany zdarzeniami `pointer`, z powtarzaniem przy przytrzymaniu.
 - Przesunięcie palcem po planszy o co najmniej 30 px wykonuje jeden krok w dominującym kierunku.
 
@@ -93,6 +101,9 @@ Czysty JavaScript i Canvas 2D, kilka plików, bez zależności i bez kroku budow
 
 "Nowa gra" zaczyna od poziomu 1 i nie kasuje rekordów. "Kontynuuj" otwiera najwyższy
 odblokowany poziom z nowym labiryntem.
+
+Pomoc przy testach: parametr adresu `?level=N` (np. `index.html?level=10`) od razu uruchamia
+poziom N. Nie odblokowuje poziomów i nie zmienia zapisanego postępu.
 
 ### 4.5 Zapis
 
@@ -140,12 +151,16 @@ tests/tests.js    - przypadki testowe
   wysokość i ściany każdego pola (flagi N, E, S, W). `canMove(maze, x, y, dir) -> boolean`.
   Zależy tylko od funkcji `rand`.
 - **game:** `createLevel(level, seed) -> State`, `move(state, dir, nowMs) -> State`,
-  `tick(state, nowMs)`, `pause(state, nowMs)`, `resume(state, nowMs)`, `restart(state)`.
-  Czas przekazywany z zewnątrz, dzięki czemu logika jest testowalna bez zegara przeglądarki.
+  `elapsed(state, nowMs) -> ms`, `pause(state, nowMs)`, `resume(state, nowMs)`,
+  `restart(state)`. Stan jest niezmienny, a `move` zwraca ten sam obiekt, gdy ruch jest
+  niemożliwy. Zegar liczony na żądanie przez `elapsed`, bez cyklicznego `tick`. Czas
+  przekazywany z zewnątrz, dzięki czemu logika jest testowalna bez zegara przeglądarki.
   Zależy od `maze` i `rng`.
 - **input:** zamienia zdarzenia przeglądarki na polecenia `'up' | 'down' | 'left' | 'right'`
   i `'pause'`, przekazywane przez callback. Nie zna stanu gry.
-- **render:** `draw(ctx, state, maze, animProgress, theme)`. Tylko rysuje, niczego nie zmienia.
+- **render:** `fitCanvas(canvas, availWidth, availHeight, maze, dpr) -> view` oraz
+  `draw(ctx, view, maze, pos, theme)`, gdzie `pos` to pozycja gracza (także pośrednia
+  w trakcie animacji, wyliczana przez `main`). Tylko rysuje, niczego nie zmienia.
 - **storage:** `load() -> Progress`, `save(progress)`, `recordResult(progress, level, timeMs,
   moves) -> { progress, newBestTime, newBestMoves }`.
 - **ui:** pokazuje i ukrywa ekrany, aktualizuje HUD, obsługuje przyciski, przekazuje akcje
@@ -171,9 +186,11 @@ testowane bez interfejsu.
 
 ## 8. Testy
 
-### 8.1 Automatyczne (`tests/test.html`, otwierane w przeglądarce)
+### 8.1 Automatyczne (`tests/test.html` w przeglądarce oraz `node tests/run-node.js`)
 
-Minimalna własna funkcja asercji, wynik na stronie (liczba zaliczonych i lista błędów).
+Minimalna własna funkcja asercji, wynik na stronie (liczba zaliczonych i lista błędów). Te same
+testy uruchamia Node (tylko do testów, gra go nie potrzebuje) oraz Chrome bez okna przez
+`tools/chrome.sh tests`. Lista plików testowych istnieje tylko w `tests/test.html`.
 
 - rng: to samo ziarno daje ten sam ciąg, różne ziarna dają różne ciągi.
 - maze: dla rozmiarów 2x2, 8x8 i 25x25 każde pole jest osiągalne ze startu.
@@ -194,6 +211,8 @@ Minimalna własna funkcja asercji, wynik na stronie (liczba zaliczonych i lista 
 
 - Przejście poziomów 1-3 klawiaturą (strzałki i WASD).
 - Przytrzymanie klawisza, pauza przez Esc, P i przełączenie karty.
+- Nowa plansza przyciskiem i klawiszem N: inny labirynt, ten sam poziom, czas i ruchy od zera,
+  rekordy bez zmian.
 - Telefon: krzyżak, gesty, obrót ekranu, brak przewijania strony podczas gry.
 - Zamknięcie karty i ponowne otwarcie: działa Kontynuuj, rekordy są zachowane.
 - Tryb prywatny lub zablokowany zapis: gra działa bez błędów.
