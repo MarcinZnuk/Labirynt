@@ -2,6 +2,8 @@
 :root {
   --bg: #2a170a;
   --map: url("../img/mapa-ciemna.webp");
+  /* Świeca jest przy samej górnej krawędzi obrazu, więc w szerokim oknie przycinamy tylko dół. */
+  --map-pos: 50% 0;
   --fg: #f3e6c8;
   --muted: #d8c29a;
   --accent: #e8b04a;
@@ -13,6 +15,7 @@
 :root[data-theme="light"] {
   --bg: #e9d3a8;
   --map: url("../img/mapa-jasna.webp");
+  --map-pos: 50% 50%;
   --fg: #2b1d10;
   --muted: #5e4630;
   --accent: #9b2c1c;
@@ -36,7 +39,7 @@ body {
 }
 
 body {
-  background: var(--bg) var(--map) center / cover no-repeat;
+  background: var(--bg);
   color: var(--fg);
   font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   overflow: hidden;
@@ -45,7 +48,88 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Scena pod treścią gry: obraz mapy, który powoli się przybliża (ruch kamery), i warstwa
+   światła. W ciemnym motywie światło świecy migocze, w jasnym po mapie przesuwa się cień
+   chmury. W trakcie gry kamera stoi, a światło jest przygaszone, żeby nie odciągać od planszy. */
+.scene {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.scene-map {
+  position: absolute;
+  inset: 0;
+  background: var(--map) var(--map-pos) / cover no-repeat;
+  transform-origin: var(--map-pos);
+  will-change: transform;
+  animation: camera 24s ease-in-out infinite alternate;
+}
+
+/* Przybliżenie od punktu przypięcia obrazu i przesunięcie tylko w bok, mniejsze niż zapas
+   z przybliżenia, więc brzeg obrazu nie wychodzi na ekran, a w ciemnym motywie świeca zostaje. */
+@keyframes camera {
+  from { transform: scale(1) translateX(0); }
+  to { transform: scale(1.1) translateX(-2%); }
+}
+
+.scene-light {
+  position: absolute;
+  inset: 0;
+  transition: opacity 0.6s;
+}
+
+.scene-light::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+:root:not([data-theme="light"]) .scene-light::before {
+  background: radial-gradient(ellipse 80% 90% at 90% 5%,
+    rgba(255, 180, 80, 0.6), rgba(255, 140, 50, 0.22) 45%, transparent 80%);
+  animation: candle 3.1s ease-in-out infinite;
+}
+
+/* Nieregularne, łagodne zmiany jasności jak od płomienia, bez szybkiego błyskania. */
+@keyframes candle {
+  0%, 100% { opacity: 0.6; }
+  14% { opacity: 1; }
+  24% { opacity: 0.45; }
+  38% { opacity: 0.9; }
+  50% { opacity: 0.3; }
+  63% { opacity: 1; }
+  76% { opacity: 0.55; }
+  88% { opacity: 0.85; }
+}
+
+:root[data-theme="light"] .scene-light::before {
+  inset: -20% auto -20% 0;
+  width: 70%;
+  background:
+    radial-gradient(ellipse 45% 40% at 40% 45%, rgba(60, 38, 15, 0.38), transparent 70%),
+    radial-gradient(ellipse 40% 35% at 62% 58%, rgba(60, 38, 15, 0.3), transparent 70%);
+  transform: translateX(-100%);
+  animation: cloud 24s linear infinite;
+}
+
+/* Cień przechodzi przez ekran w około 17 s, potem chwila przerwy poza ekranem. */
+@keyframes cloud {
+  0% { transform: translateX(-100%); }
+  70%, 100% { transform: translateX(150%); }
+}
+
+:root[data-screen="game"] .scene-map {
+  animation-play-state: paused;
+}
+
+:root[data-screen="game"] .scene-light {
+  opacity: 0.35;
+}
+
 .app {
+  position: relative;
   height: 100vh;
   height: 100dvh;
   padding: 12px;
@@ -253,7 +337,9 @@ button:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  *::before,
+  *::after {
     transition: none !important;
     animation: none !important;
   }

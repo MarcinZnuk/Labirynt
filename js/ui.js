@@ -66,6 +66,8 @@
   }
 
   function show(name) {
+    // Arkusz stylów wycisza ożywienie tła, gdy trwa gra.
+    doc.documentElement.dataset.screen = name;
     for (const screen of doc.querySelectorAll('.screen')) screen.hidden = screen.dataset.screen !== name;
     if (doc.activeElement && doc.activeElement !== doc.body) doc.activeElement.blur();
     const target = doc.querySelector(`.screen[data-screen="${name}"] [data-autofocus]`);
