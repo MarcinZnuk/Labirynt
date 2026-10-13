@@ -170,6 +170,9 @@ function check(name, condition, detail) {
           ' level: document.getElementById("done-level").textContent,' +
           ' time: document.getElementById("done-time").textContent,' +
           ' moves: document.getElementById("done-moves").textContent,' +
+          ' shortest: document.getElementById("done-shortest").textContent,' +
+          ' stars: document.getElementById("done-stars").textContent,' +
+          ' starsLabel: document.getElementById("done-stars").getAttribute("aria-label"),' +
           ' record: document.getElementById("done-record").textContent,' +
           ' saved: window.localStorage.getItem("labirynt.v1")' +
           '})'
@@ -178,6 +181,13 @@ function check(name, condition, detail) {
       check('ukonczenie: ekran pokazuje poziom 1 i niezerowy czas',
         result.level === '1' && result.time !== '0:00.0' && Number(result.moves) > 0,
         JSON.stringify(result));
+      const filled = (result.stars.match(/★/g) || []).length;
+      check('ukonczenie: najkrotsza droga nie dluzsza niz ruchy gracza',
+        Number(result.shortest) > 0 && Number(result.shortest) <= Number(result.moves),
+        JSON.stringify(result));
+      check('ukonczenie: gwiazdki zgodne z opisem dla czytnika',
+        result.stars.length === 3 && filled >= 1 && result.starsLabel === 'Ocena: ' + filled + ' z 3',
+        result.stars + ' / ' + result.starsLabel);
       check('ukonczenie: rekord zapisany raz, poziom 2 odblokowany',
         saved.unlocked === 2 && Object.keys(saved.best || {}).length === 1,
         result.saved);

@@ -100,10 +100,13 @@
     progress = result.progress;
     store.save(progress);
     L.ui.setContinueVisible(progress.unlocked > 1);
+    const shortest = L.maze.shortestPathLength(state.maze);
     L.ui.showDone({
       level: state.level,
       timeMs,
       moves: state.moves,
+      shortest,
+      stars: L.game.stars(state.moves, shortest),
       newBestTime: result.newBestTime,
       newBestMoves: result.newBestMoves,
     });

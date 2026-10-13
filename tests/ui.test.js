@@ -22,6 +22,10 @@
     );
   });
 
+  test('ui: starsText rysuje pełne i puste gwiazdki', () => {
+    assertEqual([1, 2, 3].map(U.starsText), ['★☆☆', '★★☆', '★★★']);
+  });
+
   test('ui: recordRows sortuje poziomy liczbowo', () => {
     const progress = {
       unlocked: 11,

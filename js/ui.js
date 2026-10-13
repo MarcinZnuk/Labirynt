@@ -18,6 +18,10 @@
     return '';
   }
 
+  function starsText(count) {
+    return '★'.repeat(count) + '☆'.repeat(3 - count);
+  }
+
   function recordRows(progress) {
     return Object.keys(progress.best)
       .map(Number)
@@ -43,6 +47,8 @@
       doneLevel: byId('done-level'),
       doneTime: byId('done-time'),
       doneMoves: byId('done-moves'),
+      doneShortest: byId('done-shortest'),
+      doneStars: byId('done-stars'),
       doneRecord: byId('done-record'),
       recordsTable: byId('records-table'),
       recordsBody: byId('records-body'),
@@ -91,6 +97,9 @@
     el.doneLevel.textContent = String(result.level);
     el.doneTime.textContent = formatTime(result.timeMs);
     el.doneMoves.textContent = String(result.moves);
+    el.doneShortest.textContent = String(result.shortest);
+    el.doneStars.textContent = starsText(result.stars);
+    el.doneStars.setAttribute('aria-label', 'Ocena: ' + result.stars + ' z 3');
     const text = recordText(result.newBestTime, result.newBestMoves);
     el.doneRecord.textContent = text;
     el.doneRecord.hidden = text === '';
@@ -122,6 +131,7 @@
   L.ui = {
     formatTime,
     recordText,
+    starsText,
     recordRows,
     init,
     show,

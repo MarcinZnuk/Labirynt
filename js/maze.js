@@ -59,5 +59,28 @@
     return !hasWall(maze, x, y, DIRS[dir].wall);
   }
 
-  L.maze = { WALL, DIRS, generate, hasWall, canMove };
+  // Liczba ruchów najkrótszej drogi ze startu (0, 0) do wyjścia w prawym dolnym rogu (BFS).
+  function shortestPathLength(maze) {
+    const target = maze.width * maze.height - 1;
+    const dist = new Array(maze.width * maze.height).fill(-1);
+    const queue = [0];
+    dist[0] = 0;
+    for (let head = 0; head < queue.length; head++) {
+      const current = queue[head];
+      if (current === target) return dist[current];
+      const x = current % maze.width;
+      const y = Math.floor(current / maze.width);
+      for (const name of DIR_NAMES) {
+        if (!canMove(maze, x, y, name)) continue;
+        const next = (y + DIRS[name].dy) * maze.width + (x + DIRS[name].dx);
+        if (dist[next] === -1) {
+          dist[next] = dist[current] + 1;
+          queue.push(next);
+        }
+      }
+    }
+    return dist[target];
+  }
+
+  L.maze = { WALL, DIRS, generate, hasWall, canMove, shortestPathLength };
 })(window.Labirynt = window.Labirynt || {});

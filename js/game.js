@@ -70,5 +70,12 @@
     return initialState(state.level, state.seed, state.maze);
   }
 
-  L.game = { MAX_SIZE, levelSize, createLevel, elapsed, move, pause, resume, restart };
+  // 3 gwiazdki za najkrótszą drogę, 2 za drogę dłuższą najwyżej o połowę, 1 za każde przejście.
+  function stars(moves, shortest) {
+    if (moves <= shortest) return 3;
+    if (moves <= shortest * 1.5) return 2;
+    return 1;
+  }
+
+  L.game = { MAX_SIZE, levelSize, createLevel, elapsed, move, pause, resume, restart, stars };
 })(window.Labirynt = window.Labirynt || {});

@@ -120,6 +120,19 @@
     assert(G.pause(s, 2000) === s, 'pauza po ukończeniu');
   });
 
+  test('game: przejście najkrótszą drogą ma tyle ruchów, ile podaje labirynt', () => {
+    let s = G.createLevel(10, 42);
+    for (const dir of solve(s.maze)) s = G.move(s, dir, 1000);
+    assertEqual([s.finished, s.moves], [true, L.maze.shortestPathLength(s.maze)]);
+  });
+
+  test('game: gwiazdki za długość drogi', () => {
+    assertEqual(
+      [[20, 20], [21, 20], [30, 20], [31, 20], [25, 17], [26, 17], [500, 20]].map(([m, s]) => G.stars(m, s)),
+      [3, 2, 2, 1, 2, 1, 1]
+    );
+  });
+
   test('game: restart zachowuje labirynt i zeruje postęp', () => {
     let s = G.createLevel(4, 21);
     s = G.move(s, openDir(s), 1000);

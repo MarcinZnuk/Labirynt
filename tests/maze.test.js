@@ -92,4 +92,16 @@
   test('maze: 25x25 ma 625 pól (brak przepełnienia stosu)', () => {
     assertEqual(build(25, 25, 2024).walls.length, 625);
   });
+
+  test('maze: najkrótsza droga idzie korytarzem, nie na skróty', () => {
+    // Wąż 3x3: prawo, prawo, dół, lewo, lewo, dół, prawo, prawo.
+    const snake = { width: 3, height: 3, walls: [13, 5, 3, 9, 5, 6, 12, 5, 7] };
+    assertEqual(L.maze.shortestPathLength(snake), 8);
+  });
+
+  test('maze: najkrótsza droga w prostych przypadkach', () => {
+    assertEqual(L.maze.shortestPathLength(build(1, 1, 1)), 0, '1x1');
+    assertEqual(L.maze.shortestPathLength(build(3, 1, 1)), 2, '3x1');
+    assertEqual(L.maze.shortestPathLength(build(2, 2, 1)), 2, '2x2');
+  });
 })();

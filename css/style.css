@@ -5,6 +5,7 @@
   --accent: #4cc2ff;
   --panel: #1b2230;
   --overlay: rgba(16, 20, 28, 0.88);
+  --star: #f2c94c;
 }
 
 :root[data-theme="light"] {
@@ -14,6 +15,7 @@
   --accent: #0a66c2;
   --panel: #e7e8e3;
   --overlay: rgba(247, 247, 244, 0.92);
+  --star: #9a6700;
 }
 
 * {
@@ -187,6 +189,14 @@ button:focus-visible {
   .dpad {
     display: grid;
   }
+}
+
+.stars {
+  margin: 0;
+  font-size: 2.5rem;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  color: var(--star);
 }
 
 .stats {
