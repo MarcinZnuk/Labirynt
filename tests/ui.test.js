@@ -26,6 +26,10 @@
     assertEqual([1, 2, 3].map(U.starsText), ['★☆☆', '★★☆', '★★★']);
   });
 
+  test('ui: continueLabel pokazuje poziom przerwanej gry', () => {
+    assertEqual([U.continueLabel(null), U.continueLabel(3)], ['Kontynuuj', 'Kontynuuj: poziom 3']);
+  });
+
   test('ui: recordRows sortuje poziomy liczbowo', () => {
     const progress = {
       unlocked: 11,

@@ -28,15 +28,18 @@
     throw new Error(message || 'oczekiwano wyjątku');
   }
 
-  function run() {
-    return cases.map((c) => {
+  // Testy mogą zwracać obietnicę; wykonują się po kolei.
+  async function run() {
+    const results = [];
+    for (const c of cases) {
       try {
-        c.fn();
-        return { name: c.name, ok: true };
+        await c.fn();
+        results.push({ name: c.name, ok: true });
       } catch (err) {
-        return { name: c.name, ok: false, error: err && err.message ? err.message : String(err) };
+        results.push({ name: c.name, ok: false, error: err && err.message ? err.message : String(err) });
       }
-    });
+    }
+    return results;
   }
 
   root.T = { test, assert, assertEqual, assertThrows, run };

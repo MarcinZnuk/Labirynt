@@ -77,5 +77,41 @@
     return 1;
   }
 
-  L.game = { MAX_SIZE, levelSize, createLevel, elapsed, move, pause, resume, restart, stars };
+  function isCount(value) {
+    return Number.isInteger(value) && value >= 0;
+  }
+
+  // Zapis przerwanej gry: labirynt odtwarza się z poziomu i ziarna, więc ścian nie zapisujemy.
+  function toSave(state, nowMs) {
+    return {
+      level: state.level,
+      seed: state.seed,
+      x: state.x,
+      y: state.y,
+      moves: state.moves,
+      timeMs: Math.round(elapsed(state, nowMs)),
+    };
+  }
+
+  // Stan z zapisu, w pauzie. Zapis spoza zasad gry (np. poprawiony ręcznie w bazie) daje null.
+  function fromSave(save) {
+    if (save === null || typeof save !== 'object') return null;
+    const { level, seed, x, y, moves, timeMs } = save;
+    if (!Number.isInteger(level) || level < 1) return null;
+    if (!isCount(seed) || seed > 0xffffffff) return null;
+    if (!isCount(moves) || !isCount(timeMs)) return null;
+    const size = levelSize(level);
+    if (!isCount(x) || !isCount(y) || x >= size || y >= size) return null;
+    if (x === size - 1 && y === size - 1) return null;
+    return Object.assign(createLevel(level, seed), {
+      x,
+      y,
+      moves,
+      accumulatedMs: timeMs,
+      clockStarted: moves > 0,
+      paused: true,
+    });
+  }
+
+  L.game = { MAX_SIZE, levelSize, createLevel, elapsed, move, pause, resume, restart, stars, toSave, fromSave };
 })(window.Labirynt = window.Labirynt || {});

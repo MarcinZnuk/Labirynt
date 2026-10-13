@@ -22,6 +22,10 @@
     return '★'.repeat(count) + '☆'.repeat(3 - count);
   }
 
+  function continueLabel(level) {
+    return level ? 'Kontynuuj: poziom ' + level : 'Kontynuuj';
+  }
+
   function recordRows(progress) {
     return Object.keys(progress.best)
       .map(Number)
@@ -68,8 +72,10 @@
     if (target) target.focus();
   }
 
-  function setContinueVisible(visible) {
+  // level: poziom przerwanej gry do wznowienia albo null.
+  function setContinue(visible, level) {
     el.continueBtn.hidden = !visible;
+    el.continueBtn.textContent = continueLabel(level);
   }
 
   function applyTheme(theme) {
@@ -132,10 +138,11 @@
     formatTime,
     recordText,
     starsText,
+    continueLabel,
     recordRows,
     init,
     show,
-    setContinueVisible,
+    setContinue,
     applyTheme,
     updateHud,
     setPaused,

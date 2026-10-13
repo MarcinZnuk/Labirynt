@@ -2,6 +2,9 @@
 
 Data: 2026-09-29
 Status: zaakceptowana, uzgodniona z planem prac `docs/superpowers/plans/2026-09-29-labirynt.md`
+Zmiana 2026-10-13: najkrótsza droga i gwiazdki na koniec poziomu (punkty 4.2, 4.4, 6.1 i 8.1).
+Zmiana 2026-10-13: zapis wyników i przerwanej gry w bazie Supabase (punkty 2, 4.4, 4.6, 5, 6, 7, 8
+i 10).
 
 ## 1. Cel i kryterium sukcesu
 
@@ -25,6 +28,9 @@ kolejne poziomy, a gra zapamiętuje postęp i rekordy.
 | Kolory | motyw ciemny domyślnie, jasny do wyboru | założenie zaakceptowane |
 | Podpowiedź drogi | poza pierwszą wersją | założenie zaakceptowane |
 | Maksymalny rozmiar | 25x25, bez przewijanej kamery | założenie zaakceptowane |
+| Baza danych | Supabase | użytkownik, 13.10.2026 |
+| Zakres bazy | zapis wyników i wznawianie przerwanej gry | użytkownik, 13.10.2026 |
+| Gracz w bazie | bez logowania, anonimowy użytkownik przypisany do przeglądarki | użytkownik, 13.10.2026 |
 
 ## 3. Podejście techniczne
 
@@ -63,6 +69,11 @@ Czysty JavaScript i Canvas 2D, kilka plików, bez zależności i bez kroku budow
 - Przytrzymanie klawisza lub przycisku krzyżaka powtarza ruch co 120 ms, pierwsze powtórzenie
   po 200 ms.
 - Wejście na pole wyjścia kończy poziom i zatrzymuje zegar.
+- Po ukończeniu poziomu gra wylicza długość najkrótszej drogi ze startu do wyjścia (liczba ruchów)
+  i przyznaje ocenę: 3 gwiazdki za przejście najkrótszą drogą, 2 za drogę dłuższą najwyżej
+  o połowę, 1 za każde inne przejście. Przykład dla najkrótszej drogi 64 ruchów: 64 ruchy dają
+  3 gwiazdki, 65-96 ruchów 2 gwiazdki, 97 i więcej 1 gwiazdkę. Ocena nie jest zapisywana
+  w rekordach.
 - Zegar startuje przy pierwszym udanym ruchu na poziomie, nie przy wyświetleniu planszy.
 - HUD pokazuje: numer poziomu, czas (format `m:ss.d`), liczbę ruchów oraz przyciski Pauza,
   Restart i Nowa plansza.
@@ -90,20 +101,22 @@ Czysty JavaScript i Canvas 2D, kilka plików, bez zależności i bez kroku budow
 
 ### 4.4 Ekrany
 
-1. **Menu:** tytuł, przyciski Nowa gra, Kontynuuj (widoczny tylko przy zapisanym postępie),
-   Rekordy oraz przełącznik motywu.
+1. **Menu:** tytuł, przyciski Nowa gra, Kontynuuj (widoczny tylko przy zapisanym postępie
+   albo przerwanej grze w bazie), Rekordy oraz przełącznik motywu.
 2. **Gra:** plansza, HUD, krzyżak na urządzeniach dotykowych, nakładka pauzy z przyciskami
    Wznów i Menu.
-3. **Koniec poziomu:** czas, liczba ruchów, oznaczenie nowego rekordu czasu lub ruchów,
-   przyciski Dalej i Menu.
+3. **Koniec poziomu:** ocena gwiazdkami, czas, liczba ruchów, długość najkrótszej drogi,
+   oznaczenie nowego rekordu czasu lub ruchów, przyciski Dalej i Menu. Gwiazdki mają też opis
+   tekstowy dla czytników ekranu, np. "Ocena: 2 z 3".
 4. **Rekordy:** tabela poziomów z najlepszym czasem i najmniejszą liczbą ruchów, przycisk
    Wyczyść rekordy (z potwierdzeniem) i Wróć.
 
 "Nowa gra" zaczyna od poziomu 1 i nie kasuje rekordów. "Kontynuuj" otwiera najwyższy
-odblokowany poziom z nowym labiryntem.
+odblokowany poziom z nowym labiryntem, a gdy w bazie jest przerwana gra, wznawia ją (punkt 4.6).
 
 Pomoc przy testach: parametr adresu `?level=N` (np. `index.html?level=10`) od razu uruchamia
-poziom N. Nie odblokowuje poziomów i nie zmienia zapisanego postępu.
+poziom N. Nie odblokowuje poziomów i nie zmienia zapisanego postępu. Przy tym parametrze gra
+nie łączy się z bazą.
 
 ### 4.5 Zapis
 
@@ -115,9 +128,74 @@ poziom N. Nie odblokowuje poziomów i nie zmienia zapisanego postępu.
   oznaczają stan domyślny (`unlocked: 1`, puste rekordy, motyw ciemny). Gra działa wtedy
   normalnie, tylko bez zapamiętywania.
 
+### 4.6 Baza danych (Supabase)
+
+Dodatek do zapisu z punktu 4.5, nie jego zamiennik. Gra działa w pełni bez bazy, a baza dokłada
+zapis wyników i wznawianie przerwanej gry.
+
+**Struktura bazy:** `supabase/schema.sql`, czyli tabele `results` i `saved_games`, widok `records`
+i reguły dostępu (RLS): każdy gracz czyta i zmienia tylko swoje wiersze. Skrypt uruchomiony
+w projekcie Supabase 13.10.2026. W ustawieniach projektu musi być włączone logowanie anonimowe
+(Authentication, Sign In / Providers, "Allow anonymous sign-ins").
+
+**Konfiguracja:** `js/cloud-config.js` z adresem projektu i kluczem publicznym (publishable albo
+anon). Klucz publiczny jest jawny z założenia, dane chronią reguły RLS. W pliku nigdy nie trafia
+klucz tajny (secret) ani `service_role`. Puste wartości wyłączają bazę i gra działa jak bez
+internetu. Tak uruchamiane są testy automatyczne. Konfiguracja ustawiona przed załadowaniem
+strony ma pierwszeństwo przed plikiem (korzysta z tego test `tools/smoke-cloud.js`).
+
+**Gracz:** bez logowania. Przy pierwszym połączeniu gra zakłada w Supabase anonimowego
+użytkownika i zapamiętuje jego sesję w `localStorage` pod kluczem `labirynt.cloud.v1`.
+Równoczesne wywołania czekają na tę samą sesję, więc powstaje jedno konto. Wygasły
+token dostępu odnawia tokenem odświeżania. Sesja z `localStorage` ma pierwszeństwo przed kopią
+w pamięci, bo inna karta mogła ją już odnowić. Gdy serwer odrzuci token odświeżania, gra
+najpierw sprawdza, czy w `localStorage` nie ma nowszej sesji z innej karty, a dopiero potem
+zakłada nowego anonimowego użytkownika. Po wyjściu z pauzy gra odnawia wygasający token od razu,
+żeby zapis przy zamknięciu karty nie musiał czekać na logowanie. Wyczyszczenie danych przeglądarki oznacza nowego gracza: stare
+wiersze zostają w bazie, ale gra do nich nie trafia.
+
+**Wyniki:** po ukończeniu poziomu gra wysyła do `results` poziom, ziarno, czas zaokrąglony do
+milisekund, liczbę ruchów i długość najkrótszej drogi. Gwiazdki liczy baza. Ekran Rekordy dalej
+korzysta z `localStorage`. "Wyczyść rekordy" usuwa też wyniki gracza w bazie.
+
+**Przerwana gra:** jeden zapis na gracza w `saved_games`: poziom, ziarno, pozycja (x, y), liczba
+ruchów i naliczony czas w pełnych milisekundach. Labirynt odtwarza się z poziomu i ziarna. Gra
+nadpisuje zapis:
+
+- przy rozpoczęciu poziomu (Nowa gra, Dalej, Kontynuuj, Nowa plansza),
+- przy włączeniu pauzy, także automatycznej po ukryciu karty,
+- przy wyjściu do menu.
+
+Zapis gry zawsze idzie z opcją `keepalive`, żeby przetrwał zamknięcie karty. Gdy przeglądarka
+odrzuci takie zapytanie, zapis idzie zwykłym zapytaniem.
+
+Po ukończeniu poziomu zapis jest usuwany. Restart poziomu nie zapisuje od razu, zrobi to
+najbliższa pauza albo wyjście do menu.
+
+**Wznowienie:** przy starcie gra pobiera zapis z bazy. Menu pokazuje się od razu, a przycisk
+Kontynuuj zmienia się, gdy nadejdzie odpowiedź. Poprawny zapis (poziom od 1, ziarno w zakresie
+liczb 32-bitowych bez znaku, pozycja w granicach planszy, ruchy i czas nieujemne) zmienia napis
+przycisku na "Kontynuuj: poziom N". Kliknięcie odtwarza ten sam labirynt, pozycję, ruchy i czas,
+a gra startuje w pauzie z nakładką. Niepoprawny zapis jest pomijany, a Kontynuuj działa jak
+w punkcie 4.4. Kliknięcie Kontynuuj przed odpowiedzią z bazy czeka na nią (najwyżej do limitu
+czasu), żeby nie zastąpić przerwanej gry nowym poziomem.
+
+**Błędy:** każde wywołanie bazy ma limit czasu 8 s. Błąd sieci, odpowiedź z błędem i brak
+konfiguracji kończą się cicho: gra działa dalej, bez komunikatu. Nieudany zapis wyniku nie jest
+ponawiany. Darmowy projekt Supabase może zostać wstrzymany po tygodniu bez ruchu; gra działa
+wtedy jak bez internetu, a projekt wznawia się w panelu Supabase.
+
+**Bez bibliotek:** komunikacja przez `fetch` z REST API Supabase, bez biblioteki supabase-js
+(zgodnie z punktem 5). Sesja: `POST /auth/v1/signup` z ciałem `{ "data": {} }` (użytkownik
+anonimowy) i `POST /auth/v1/token?grant_type=refresh_token`. Dane: `/rest/v1/results`,
+`/rest/v1/saved_games` (zapis jako upsert z nagłówkiem `Prefer: resolution=merge-duplicates`).
+Każde zapytanie ma nagłówek `apikey` z kluczem publicznym, a zapytania o dane także
+`Authorization: Bearer` z tokenem dostępu gracza.
+
 ## 5. Wymagania niefunkcjonalne
 
-- Bez zależności zewnętrznych, bez kroku budowania, działa offline i z `file://`.
+- Bez zależności zewnętrznych, bez kroku budowania, działa offline i z `file://`. Baza
+  z punktu 4.6 jest dodatkiem: bez internetu gra działa w pełni, tylko nie zapisuje w bazie.
 - Aktualne wersje Chrome, Edge, Firefox i Safari, także mobilne.
 - Płynna animacja (pętla `requestAnimationFrame`, cel 60 klatek na sekundę).
 - Plansza skaluje się do dostępnego miejsca przy zmianie rozmiaru okna i obrocie telefonu.
@@ -138,10 +216,13 @@ js/game.js        - Labirynt.game: stan poziomu, ruch, czas, ukończenie
 js/input.js       - Labirynt.input: klawiatura, krzyżak, gesty -> polecenia ruchu
 js/render.js      - Labirynt.render: rysowanie na Canvas, skalowanie
 js/storage.js     - Labirynt.storage: odczyt i zapis postępu
+js/cloud-config.js - Labirynt.cloudConfig: adres projektu Supabase i klucz publiczny
+js/cloud.js       - Labirynt.cloud: sesja anonimowa i zapis w bazie Supabase
 js/ui.js          - Labirynt.ui: przełączanie ekranów, HUD, motyw
 js/main.js        - złożenie modułów, pętla gry
 tests/test.html   - testy logiki w przeglądarce
 tests/tests.js    - przypadki testowe
+supabase/schema.sql - tabele, widok i reguły dostępu bazy (uruchamiany w panelu Supabase)
 ```
 
 ### 6.1 Odpowiedzialności i interfejsy
@@ -149,13 +230,16 @@ tests/tests.js    - przypadki testowe
 - **rng:** `create(seed) -> () => number` z przedziału [0, 1). Brak zależności.
 - **maze:** `generate(width, height, rand) -> Maze`, gdzie `Maze` przechowuje szerokość,
   wysokość i ściany każdego pola (flagi N, E, S, W). `canMove(maze, x, y, dir) -> boolean`.
+  `shortestPathLength(maze) -> number`: liczba ruchów najkrótszej drogi ze startu do wyjścia.
   Zależy tylko od funkcji `rand`.
 - **game:** `createLevel(level, seed) -> State`, `move(state, dir, nowMs) -> State`,
   `elapsed(state, nowMs) -> ms`, `pause(state, nowMs)`, `resume(state, nowMs)`,
-  `restart(state)`. Stan jest niezmienny, a `move` zwraca ten sam obiekt, gdy ruch jest
-  niemożliwy. Zegar liczony na żądanie przez `elapsed`, bez cyklicznego `tick`. Czas
-  przekazywany z zewnątrz, dzięki czemu logika jest testowalna bez zegara przeglądarki.
-  Zależy od `maze` i `rng`.
+  `restart(state)`, `stars(moves, shortest) -> 1 | 2 | 3`. Zapis przerwanej gry:
+  `toSave(state, nowMs) -> Save` oraz `fromSave(save) -> State | null`, gdzie `Save` to
+  `{ level, seed, x, y, moves, timeMs }` z czasem w pełnych milisekundach; stan z zapisu jest
+  w pauzie, a niepoprawny zapis daje `null`. Stan jest niezmienny, a `move` zwraca ten sam obiekt, gdy ruch jest niemożliwy. Zegar
+  liczony na żądanie przez `elapsed`, bez cyklicznego `tick`. Czas przekazywany z zewnątrz,
+  dzięki czemu logika jest testowalna bez zegara przeglądarki. Zależy od `maze` i `rng`.
 - **input:** zamienia zdarzenia przeglądarki na polecenia `'up' | 'down' | 'left' | 'right'`
   i `'pause'`, przekazywane przez callback. Nie zna stanu gry.
 - **render:** `fitCanvas(canvas, availWidth, availHeight, maze, dpr) -> view` oraz
@@ -163,6 +247,14 @@ tests/tests.js    - przypadki testowe
   w trakcie animacji, wyliczana przez `main`). Tylko rysuje, niczego nie zmienia.
 - **storage:** `load() -> Progress`, `save(progress)`, `recordResult(progress, level, timeMs,
   moves) -> { progress, newBestTime, newBestMoves }`.
+- **cloud:** `create({ url, key, fetch, storage, now }) -> Cloud | null` (`null` przy pustej
+  konfiguracji). Metody `Cloud` zwracają `Promise` i nigdy nie odrzucają: `ready() -> boolean`
+  (sesja gotowa z wyprzedzeniem),
+  `saveResult({ level, seed, timeMs, moves, shortest }) -> boolean`, `clearResults() -> boolean`,
+  `saveGame(save) -> boolean`, `loadGame() -> Save | null`,
+  `deleteGame() -> boolean`. Sesję zakłada i odnawia sam przy pierwszym potrzebnym wywołaniu.
+  `fetch`, magazyn i zegar są podmienialne, więc moduł jest testowany bez sieci. Nie zna stanu
+  gry ani DOM.
 - **ui:** pokazuje i ukrywa ekrany, aktualizuje HUD, obsługuje przyciski, przekazuje akcje
   do `main`.
 - **main:** tworzy stan, łączy wejście z logiką, uruchamia pętlę i obsługuje przejścia między
@@ -180,6 +272,7 @@ testowane bez interfejsu.
 ## 7. Obsługa błędów
 
 - Zapis: jak w punkcie 4.5, błędy nigdy nie przerywają gry.
+- Baza: jak w punkcie 4.6, błędy nigdy nie przerywają gry i nie są pokazywane graczowi.
 - Brak obsługi Canvas: komunikat w miejscu planszy zamiast pustego ekranu.
 - Nieznane klawisze i nieprawidłowe polecenia są ignorowane.
 - Po powrocie z pauzy lub po przełączeniu karty czas nie nalicza okresu przerwy.
@@ -198,14 +291,33 @@ testy uruchamia Node (tylko do testów, gra go nie potrzebuje) oraz Chrome bez o
 - maze: ściany są spójne (przejście z A do B oznacza przejście z B do A), krawędzie planszy
   zamknięte.
 - maze: to samo ziarno i rozmiar dają identyczny labirynt.
+- maze: najkrótsza droga idzie korytarzem (labirynt-wąż 3x3 ma drogę 8 ruchów, nie 4).
 - game: ruch w ścianę nie zmienia pozycji ani licznika ruchów.
 - game: ruch w otwarte przejście zmienia pozycję i zwiększa licznik o 1.
 - game: zegar startuje przy pierwszym ruchu, a pauza zatrzymuje naliczanie.
 - game: wejście na wyjście ustawia stan ukończenia i zatrzymuje zegar.
 - game: rozmiar poziomu zgodny ze wzorem z punktu 4.1 (poziomy 1, 2, 9, 10, 50).
+- game: gwiazdki zgodne z progami z punktu 4.2, także na granicach progów.
 - storage: niepoprawny JSON i wyjątek magazynu dają stan domyślny.
 - storage: `recordResult` aktualizuje osobno lepszy czas i lepszą liczbę ruchów oraz odblokowuje
   kolejny poziom.
+- game: `toSave` i `fromSave` odtwarzają ten sam labirynt, pozycję, ruchy i czas, a stan
+  z zapisu jest w pauzie; zapis z pozycją poza planszą, złym poziomem albo ziarnem daje `null`.
+- cloud (z podstawionym `fetch` i magazynem): bez konfiguracji `create` zwraca `null`; bez
+  sesji zakłada użytkownika anonimowego; równoczesne wywołania zakładają jedno konto; ważną
+  sesję używa ponownie; wygasłą odnawia; `ready` odnawia ją z wyprzedzeniem; druga karta bierze
+  nowszą sesję z magazynu zamiast starego tokenu z pamięci; po odrzuceniu tokenu najpierw
+  sprawdza nowszą sesję z innej karty; po
+  odrzuceniu odnowienia zakłada nowego użytkownika; nagłówki `apikey` i `Authorization`;
+  czas zaokrąglony do milisekund; zapis gry jako upsert; błąd sieci i odpowiedź z błędem dają
+  `false` albo `null` bez wyjątku.
+
+Test gry z bazą: `tools/chrome.sh smoke-cloud` (`tools/smoke-cloud.js`) wstrzykuje do strony
+sztuczny Supabase i sprawdza: przycisk "Kontynuuj: poziom N", wznowienie w pauzie z ruchami
+i czasem, wysłanie wyniku i usunięcie zapisu po ukończeniu, zapis przy nowej grze, pauzie
+i wyjściu do menu, usunięcie wyników przy czyszczeniu rekordów, jedno konto anonimowe,
+pominięcie spóźnionej odpowiedzi z bazy, czekanie wczesnego kliknięcia Kontynuuj na odpowiedź
+z bazy oraz odnowienie tokenu od razu po wyjściu z pauzy.
 
 ### 8.2 Ręczne (lista kontrolna)
 
@@ -217,6 +329,11 @@ testy uruchamia Node (tylko do testów, gra go nie potrzebuje) oraz Chrome bez o
 - Zamknięcie karty i ponowne otwarcie: działa Kontynuuj, rekordy są zachowane.
 - Tryb prywatny lub zablokowany zapis: gra działa bez błędów.
 - Przełączenie motywu i `prefers-reduced-motion`.
+- Baza (prawdziwy projekt Supabase): ukończenie poziomu dodaje wiersz w `results`; pauza
+  zapisuje grę w `saved_games`; zamknięcie karty w trakcie gry i ponowne otwarcie pokazuje
+  "Kontynuuj: poziom N", a kliknięcie wznawia ten sam labirynt, pozycję, ruchy i czas;
+  ukończenie poziomu usuwa zapis; "Wyczyść rekordy" usuwa wyniki w bazie.
+- Bez internetu (tryb offline w narzędziach przeglądarki): gra działa bez błędów.
 
 ## 9. Etapy prac
 
@@ -235,3 +352,8 @@ testy uruchamia Node (tylko do testów, gra go nie potrzebuje) oraz Chrome bez o
 
 Dźwięk, podpowiedź drogi, mgła wojny, przeciwnicy i klucze, przewijana kamera dla labiryntów
 większych niż 25x25, tryb pseudo-3D, wersja jednoplikowa.
+
+Poza zakresem bazy (punkt 4.6): logowanie kontem (GitHub, e-mail) i wznawianie gry na innym
+urządzeniu, wspólny ranking graczy, rekordy czytane z bazy, wznowienie przerwanej gry bez
+internetu, ponawianie nieudanych zapisów, ochrona przed masowym zakładaniem kont anonimowych
+(CAPTCHA).

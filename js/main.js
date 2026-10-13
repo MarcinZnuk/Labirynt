@@ -9,6 +9,21 @@
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const store = L.storage.create(() => window.localStorage);
 
+  // ?level=N: pomoc przy testach ręcznych. Nie zmienia zapisanego postępu i wyłącza bazę,
+  // żeby test nie nadpisał przerwanej gry.
+  const startLevelParam = Number(new URLSearchParams(window.location.search).get('level'));
+  const testMode = Number.isInteger(startLevelParam) && startLevelParam >= 1;
+  const config = L.cloudConfig || {};
+  const cloud = testMode
+    ? null
+    : L.cloud.create({
+        url: config.url,
+        key: config.key,
+        fetch: (input, init) => window.fetch(input, init),
+        storage: () => window.localStorage,
+        now: () => Date.now(),
+      });
+
   let progress = store.load();
   let screen = 'menu';
   let state = null;
@@ -16,6 +31,9 @@
   let anim = null; // { fromX, fromY, start }: trwająca animacja ruchu
   let queued = null; // jedno polecenie ruchu wydane w trakcie animacji
   let finishHandled = false;
+  let savedGame = null; // przerwana gra do wznowienia przyciskiem Kontynuuj
+  let started = false; // gracz zaczął grać w tej sesji, więc spóźniony zapis z bazy jest pomijany
+  let continuing = false; // Kontynuuj czeka na odpowiedź z bazy
 
   const input = L.input.bind({
     dpad: document.getElementById('dpad'),
@@ -42,12 +60,36 @@
     finishHandled = false;
   }
 
+  function refreshContinue() {
+    L.ui.setContinue(progress.unlocked > 1 || savedGame !== null, savedGame ? savedGame.level : null);
+  }
+
+  // Zapis przerwanej gry: w pamięci od razu (dla przycisku Kontynuuj), w bazie w tle.
+  function saveGame() {
+    if (!cloud || !state || state.finished) return;
+    savedGame = L.game.toSave(state, performance.now());
+    cloud.saveGame(savedGame);
+  }
+
   function startLevel(level) {
+    started = true;
     state = L.game.createLevel(level, L.rng.randomSeed());
     resetMotion();
     L.ui.setPaused(false);
     setScreen('game');
     fit();
+    saveGame();
+  }
+
+  // Wznowienie zapisu: ten sam labirynt, pozycja, ruchy i czas; gra startuje w pauzie.
+  function resumeGame(resumed) {
+    started = true;
+    state = resumed;
+    resetMotion();
+    setScreen('game');
+    fit();
+    L.ui.setPaused(true);
+    saveGame();
   }
 
   function doMove(dir) {
@@ -89,6 +131,10 @@
     if (state.paused) {
       input.releaseAll();
       queued = null;
+      saveGame();
+    } else if (cloud) {
+      // Po przerwie token mógł wygasnąć; odnawiamy go teraz, a nie dopiero przy zamykaniu karty.
+      cloud.ready();
     }
     L.ui.setPaused(state.paused);
   }
@@ -96,11 +142,16 @@
   function finishLevel(now) {
     finishHandled = true;
     const timeMs = L.game.elapsed(state, now);
+    const shortest = L.maze.shortestPathLength(state.maze);
     const result = L.storage.recordResult(progress, state.level, timeMs, state.moves);
     progress = result.progress;
     store.save(progress);
-    L.ui.setContinueVisible(progress.unlocked > 1);
-    const shortest = L.maze.shortestPathLength(state.maze);
+    if (cloud) {
+      cloud.saveResult({ level: state.level, seed: state.seed, timeMs, moves: state.moves, shortest });
+      cloud.deleteGame();
+    }
+    savedGame = null;
+    refreshContinue();
     L.ui.showDone({
       level: state.level,
       timeMs,
@@ -138,7 +189,18 @@
 
   const handlers = {
     newGame: () => startLevel(1),
-    continue: () => startLevel(progress.unlocked),
+    // Kontynuuj czeka na odpowiedź z bazy, żeby nie zastąpić przerwanej gry nowym poziomem.
+    continue: () => {
+      if (continuing) return;
+      continuing = true;
+      loading.then(() => {
+        continuing = false;
+        if (screen !== 'menu') return;
+        const resumed = savedGame && L.game.fromSave(savedGame);
+        if (resumed) resumeGame(resumed);
+        else startLevel(progress.unlocked);
+      });
+    },
     records: () => {
       L.ui.renderRecords(progress);
       setScreen('records');
@@ -158,9 +220,10 @@
       L.ui.setPaused(false);
     },
     menu: () => {
+      saveGame();
       state = null;
       L.ui.setPaused(false);
-      L.ui.setContinueVisible(progress.unlocked > 1);
+      refreshContinue();
       setScreen('menu');
     },
     next: () => startLevel(state.level + 1),
@@ -168,6 +231,7 @@
       if (!window.confirm('Wyczyścić wszystkie rekordy?')) return;
       progress = L.storage.clearRecords(progress);
       store.save(progress);
+      if (cloud) cloud.clearResults();
       L.ui.renderRecords(progress);
     },
     back: () => setScreen('menu'),
@@ -175,7 +239,7 @@
 
   L.ui.init(document, handlers);
   L.ui.applyTheme(progress.theme);
-  L.ui.setContinueVisible(progress.unlocked > 1);
+  refreshContinue();
   if (!ctx) L.ui.showCanvasError();
 
   window.addEventListener('resize', fit);
@@ -185,10 +249,17 @@
     if (screen === 'game' && state && !state.paused && !state.finished) togglePause();
   });
 
-  // ?level=N: pomoc przy testach ręcznych, nie zmienia zapisanego postępu.
-  const startLevelParam = Number(new URLSearchParams(window.location.search).get('level'));
-  if (Number.isInteger(startLevelParam) && startLevelParam >= 1) startLevel(startLevelParam);
+  if (testMode) startLevel(startLevelParam);
   else setScreen('menu');
+
+  // Przerwana gra z bazy. Gdy gracz zdążył już zacząć grać, odpowiedź jest pomijana.
+  const loading = cloud
+    ? cloud.loadGame().then((save) => {
+        if (started || !L.game.fromSave(save)) return;
+        savedGame = save;
+        refreshContinue();
+      })
+    : Promise.resolve();
 
   requestAnimationFrame(frame);
 })(window.Labirynt);

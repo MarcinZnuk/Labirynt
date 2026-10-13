@@ -23,6 +23,8 @@
   <script src="game.test.js"></script>
   <script src="../js/storage.js"></script>
   <script src="storage.test.js"></script>
+  <script src="../js/cloud.js"></script>
+  <script src="cloud.test.js"></script>
   <script src="../js/input.js"></script>
   <script src="input.test.js"></script>
   <script src="../js/render.js"></script>
@@ -33,19 +35,20 @@
 
   <script>
     (function () {
-      const results = window.T.run();
-      const failed = results.filter((r) => !r.ok).length;
-      const summary = document.getElementById('summary');
-      summary.textContent = (results.length - failed) + '/' + results.length + ' zaliczonych';
-      summary.dataset.failed = String(failed);
-      summary.className = failed ? 'fail' : 'pass';
-      const list = document.getElementById('results');
-      for (const r of results) {
-        const li = document.createElement('li');
-        li.className = r.ok ? 'pass' : 'fail';
-        li.textContent = (r.ok ? 'PASS ' : 'FAIL ') + r.name + (r.ok ? '' : ': ' + r.error);
-        list.appendChild(li);
-      }
+      window.T.run().then(function (results) {
+        const failed = results.filter((r) => !r.ok).length;
+        const summary = document.getElementById('summary');
+        summary.textContent = (results.length - failed) + '/' + results.length + ' zaliczonych';
+        summary.dataset.failed = String(failed);
+        summary.className = failed ? 'fail' : 'pass';
+        const list = document.getElementById('results');
+        for (const r of results) {
+          const li = document.createElement('li');
+          li.className = r.ok ? 'pass' : 'fail';
+          li.textContent = (r.ok ? 'PASS ' : 'FAIL ') + r.name + (r.ok ? '' : ': ' + r.error);
+          list.appendChild(li);
+        }
+      });
     })();
   </script>
 </body>

@@ -133,6 +133,51 @@
     );
   });
 
+  test('game: zapis i odczyt przerwanej gry odtwarzają labirynt, pozycję, ruchy i czas', () => {
+    let s = G.createLevel(3, 21);
+    solve(s.maze).slice(0, 5).forEach((dir, i) => {
+      s = G.move(s, dir, 1000 + i * 100);
+    });
+    const save = G.toSave(s, 2000.4);
+    assertEqual(save, { level: 3, seed: 21, x: s.x, y: s.y, moves: 5, timeMs: 1000 });
+    const r = G.fromSave(save);
+    assertEqual(r.maze.walls, s.maze.walls, 'ten sam labirynt');
+    assertEqual([r.level, r.seed, r.x, r.y, r.moves, r.paused, r.finished], [3, 21, s.x, s.y, 5, true, false]);
+    assertEqual(G.elapsed(r, 999999), 1000, 'w pauzie zegar stoi');
+  });
+
+  test('game: po wznowieniu zapisu czas liczy się dalej od zapisanego', () => {
+    const r = G.resume(G.fromSave({ level: 1, seed: 7, x: 0, y: 0, moves: 4, timeMs: 5000 }), 10000);
+    assertEqual(G.elapsed(r, 10250), 5250);
+  });
+
+  test('game: zapis bez ruchów nie uruchamia zegara po wznowieniu', () => {
+    const r = G.resume(G.fromSave({ level: 2, seed: 9, x: 0, y: 0, moves: 0, timeMs: 0 }), 10000);
+    assertEqual(G.elapsed(r, 20000), 0);
+  });
+
+  test('game: niepoprawny zapis daje null', () => {
+    const ok = { level: 1, seed: 7, x: 3, y: 4, moves: 4, timeMs: 5000 };
+    const broken = [
+      null,
+      'zapis',
+      {},
+      Object.assign({}, ok, { level: 0 }),
+      Object.assign({}, ok, { level: 1.5 }),
+      Object.assign({}, ok, { seed: -1 }),
+      Object.assign({}, ok, { seed: 4294967296 }),
+      Object.assign({}, ok, { x: 8 }),
+      Object.assign({}, ok, { y: -1 }),
+      Object.assign({}, ok, { x: '3' }),
+      Object.assign({}, ok, { moves: 1.5 }),
+      Object.assign({}, ok, { timeMs: -1 }),
+      Object.assign({}, ok, { timeMs: null }),
+      Object.assign({}, ok, { x: 7, y: 7 }),
+    ];
+    assert(G.fromSave(ok) !== null, 'poprawny zapis');
+    broken.forEach((save, i) => assert(G.fromSave(save) === null, 'zapis nr ' + i));
+  });
+
   test('game: restart zachowuje labirynt i zeruje postęp', () => {
     let s = G.createLevel(4, 21);
     s = G.move(s, openDir(s), 1000);

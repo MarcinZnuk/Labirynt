@@ -2,6 +2,7 @@
 # Chrome bez okna do testów i zrzutów ekranu.
 #   tools/chrome.sh tests                           - uruchamia tests/test.html, kod wyjścia 0 gdy wszystko przechodzi
 #   tools/chrome.sh smoke                           - test petli gry (ruch, pauza, ukonczenie poziomu)
+#   tools/chrome.sh smoke-cloud                     - test gry z bazą (sztuczny Supabase w stronie)
 #   tools/chrome.sh shot <plik[?query]> <nazwa> [SZER,WYS] - zapisuje zrzut do .shots/<nazwa>.png
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -24,12 +25,15 @@ case "${1:-}" in
   smoke)
     node tools/smoke.js
     ;;
+  smoke-cloud)
+    node tools/smoke-cloud.js
+    ;;
   shot)
     # Zrzut przez CDP: --window-size na Windows nie schodzi ponizej okolic 504 px.
     node tools/shot.js "$2" "$3" "${4:-390,844}"
     ;;
   *)
-    echo "użycie: tools/chrome.sh tests | smoke | shot <plik[?query]> <nazwa> [SZER,WYS]" >&2
+    echo "użycie: tools/chrome.sh tests | smoke | smoke-cloud | shot <plik[?query]> <nazwa> [SZER,WYS]" >&2
     exit 2
     ;;
 esac
