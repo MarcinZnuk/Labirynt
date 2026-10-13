@@ -239,6 +239,8 @@
 
   L.ui.init(document, handlers);
   L.ui.applyTheme(progress.theme);
+  // Warunek na wypadek strony z pamięci przeglądarki bez skryptu kurzu: gra działa dalej.
+  if (L.dust) L.dust.start(document.querySelector('.scene-dust'), window);
   refreshContinue();
   if (!ctx) L.ui.showCanvasError();
 
