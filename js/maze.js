@@ -59,28 +59,40 @@
     return !hasWall(maze, x, y, DIRS[dir].wall);
   }
 
-  // Liczba ruchów najkrótszej drogi ze startu (0, 0) do wyjścia w prawym dolnym rogu (BFS).
-  function shortestPathLength(maze) {
-    const target = maze.width * maze.height - 1;
-    const dist = new Array(maze.width * maze.height).fill(-1);
+  // Najkrótsza droga ze startu (0, 0) do pola (x, y), od startu do celu (BFS).
+  // Labirynt jest doskonały, więc to jedyna droga bez zawracania. Pusta, gdy pola nie ma.
+  function pathFromStart(maze, x, y) {
+    if (!inside(maze, x, y)) return [];
+    const target = y * maze.width + x;
+    const prev = new Array(maze.width * maze.height).fill(-1);
     const queue = [0];
-    dist[0] = 0;
-    for (let head = 0; head < queue.length; head++) {
+    prev[0] = 0;
+    for (let head = 0; head < queue.length && prev[target] === -1; head++) {
       const current = queue[head];
-      if (current === target) return dist[current];
-      const x = current % maze.width;
-      const y = Math.floor(current / maze.width);
+      const cx = current % maze.width;
+      const cy = Math.floor(current / maze.width);
       for (const name of DIR_NAMES) {
-        if (!canMove(maze, x, y, name)) continue;
-        const next = (y + DIRS[name].dy) * maze.width + (x + DIRS[name].dx);
-        if (dist[next] === -1) {
-          dist[next] = dist[current] + 1;
+        if (!canMove(maze, cx, cy, name)) continue;
+        const next = (cy + DIRS[name].dy) * maze.width + (cx + DIRS[name].dx);
+        if (prev[next] === -1) {
+          prev[next] = current;
           queue.push(next);
         }
       }
     }
-    return dist[target];
+    if (prev[target] === -1) return [];
+    const path = [];
+    for (let i = target; ; i = prev[i]) {
+      path.push({ x: i % maze.width, y: Math.floor(i / maze.width) });
+      if (i === 0) break;
+    }
+    return path.reverse();
   }
 
-  L.maze = { WALL, DIRS, generate, hasWall, canMove, shortestPathLength };
+  // Liczba ruchów najkrótszej drogi ze startu do wyjścia w prawym dolnym rogu.
+  function shortestPathLength(maze) {
+    return pathFromStart(maze, maze.width - 1, maze.height - 1).length - 1;
+  }
+
+  L.maze = { WALL, DIRS, generate, hasWall, canMove, pathFromStart, shortestPathLength };
 })(window.Labirynt = window.Labirynt || {});

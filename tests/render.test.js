@@ -29,10 +29,11 @@
       assert(R.contrastRatio(c.wall, c.background) >= 4.5, 'kontrast ' + R.contrastRatio(c.wall, c.background));
     });
 
-    test(`render: motyw ${name} - gracz i wyjście mają kontrast co najmniej 3:1`, () => {
+    test(`render: motyw ${name} - gracz, wyjście i ślad mają kontrast co najmniej 3:1`, () => {
       const c = R.THEMES[name];
       assert(R.contrastRatio(c.player, c.background) >= 3, 'gracz');
       assert(R.contrastRatio(c.exit, c.background) >= 3, 'wyjście');
+      assert(R.contrastRatio(c.trail, c.background) >= 3, 'ślad');
     });
   }
 })();

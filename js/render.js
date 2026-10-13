@@ -7,10 +7,21 @@
   // Plansza leży na obrazie mapy: tło planszy to półprzezroczysta warstwa koloru pergaminu
   // (krycie BOARD_ALPHA), która wyrównuje rysunki pod ścianami, ale zostawia mapę widoczną.
   const BOARD_ALPHA = 0.6;
+  // Wyjście i ślad gracza w kolorze czerwonego atramentu, jak trasa do skarbu na obrazie mapy.
   const THEMES = {
-    dark: { background: '#3e220c', wall: '#f3e6c8', player: '#4cc2ff', exit: '#5ee07a' },
-    light: { background: '#f0d9b0', wall: '#2b1d10', player: '#0a66c2', exit: '#1a8f3c' },
+    dark: { background: '#3e220c', wall: '#f3e6c8', player: '#4cc2ff', exit: '#e5553f', trail: '#e5553f' },
+    light: { background: '#f0d9b0', wall: '#2b1d10', player: '#0a66c2', exit: '#a3221a', trail: '#a3221a' },
   };
+
+  // Droga liczy się na nowo tylko po zmianie planszy albo pola gracza, a nie w każdej klatce.
+  let trailCache = { maze: null, x: -1, y: -1, path: [] };
+
+  function trailPath(maze, x, y) {
+    if (trailCache.maze !== maze || trailCache.x !== x || trailCache.y !== y) {
+      trailCache = { maze, x, y, path: L.maze.pathFromStart(maze, x, y) };
+    }
+    return trailCache.path;
+  }
 
   function cellSize(availWidth, availHeight, cols, rows) {
     const size = Math.floor(Math.min((availWidth - 2 * PAD) / cols, (availHeight - 2 * PAD) / rows));
@@ -54,14 +65,39 @@
     ctx.fillRect(0, 0, view.cssWidth, view.cssHeight);
     ctx.globalAlpha = 1;
 
-    const inset = Math.max(1, Math.round(cell * 0.2));
-    ctx.fillStyle = colors.exit;
-    ctx.fillRect(
-      PAD + (maze.width - 1) * cell + inset,
-      PAD + (maze.height - 1) * cell + inset,
-      cell - 2 * inset,
-      cell - 2 * inset
-    );
+    // Kropkowana trasa od startu do pola gracza. Labirynt nie ma pętli, więc przy zawracaniu
+    // kropki same się zwijają. Kropki to zerowe kreski z okrągłym końcem.
+    const trail = trailPath(maze, Math.round(pos.x), Math.round(pos.y));
+    if (trail.length > 1) {
+      ctx.strokeStyle = colors.trail;
+      ctx.lineWidth = Math.max(2, cell * 0.1);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.setLineDash([0, Math.max(4, cell / 4)]);
+      ctx.beginPath();
+      trail.forEach((c, i) => {
+        const cx = PAD + (c.x + 0.5) * cell;
+        const cy = PAD + (c.y + 0.5) * cell;
+        if (i === 0) ctx.moveTo(cx, cy);
+        else ctx.lineTo(cx, cy);
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Wyjście oznacza czerwony X.
+    const inset = Math.max(2, Math.round(cell * 0.22));
+    const exitLeft = PAD + (maze.width - 1) * cell;
+    const exitTop = PAD + (maze.height - 1) * cell;
+    ctx.strokeStyle = colors.exit;
+    ctx.lineWidth = Math.max(2, cell * 0.14);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(exitLeft + inset, exitTop + inset);
+    ctx.lineTo(exitLeft + cell - inset, exitTop + cell - inset);
+    ctx.moveTo(exitLeft + cell - inset, exitTop + inset);
+    ctx.lineTo(exitLeft + inset, exitTop + cell - inset);
+    ctx.stroke();
 
     // Górna i lewa ściana każdego pola oraz prawa i dolna krawędź planszy.
     // Grubość najwyżej 2 * PAD, żeby zewnętrzne ściany nie wychodziły poza płótno.

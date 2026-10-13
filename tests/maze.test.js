@@ -104,4 +104,39 @@
     assertEqual(L.maze.shortestPathLength(build(3, 1, 1)), 2, '3x1');
     assertEqual(L.maze.shortestPathLength(build(2, 2, 1)), 2, '2x2');
   });
+
+  test('maze: droga ze startu do startu to samo pole startu', () => {
+    assertEqual(L.maze.pathFromStart(build(5, 5, 3), 0, 0), [{ x: 0, y: 0 }]);
+  });
+
+  test('maze: droga ze startu idzie korytarzem, nie na skróty', () => {
+    const snake = { width: 3, height: 3, walls: [13, 5, 3, 9, 5, 6, 12, 5, 7] };
+    const path = L.maze.pathFromStart(snake, 0, 1);
+    assertEqual(path.map((c) => c.x + ',' + c.y), ['0,0', '1,0', '2,0', '2,1', '1,1', '0,1']);
+  });
+
+  test('maze: droga ze startu przechodzi tylko przez otwarte przejścia', () => {
+    const maze = build(12, 12, 77);
+    for (const [tx, ty] of [[11, 11], [0, 11], [11, 0], [6, 5]]) {
+      const path = L.maze.pathFromStart(maze, tx, ty);
+      assertEqual(path[0], { x: 0, y: 0 }, 'początek');
+      assertEqual(path[path.length - 1], { x: tx, y: ty }, 'koniec');
+      for (let i = 1; i < path.length; i++) {
+        const a = path[i - 1];
+        const b = path[i];
+        const dir = Object.keys(DIRS).find((n) => a.x + DIRS[n].dx === b.x && a.y + DIRS[n].dy === b.y);
+        assert(dir && L.maze.canMove(maze, a.x, a.y, dir), 'brak przejścia ' + JSON.stringify([a, b]));
+      }
+    }
+  });
+
+  test('maze: droga ze startu do wyjścia ma tyle ruchów, co najkrótsza droga', () => {
+    const maze = build(25, 25, 2024);
+    assertEqual(L.maze.pathFromStart(maze, 24, 24).length - 1, L.maze.shortestPathLength(maze));
+  });
+
+  test('maze: droga ze startu do pola spoza planszy jest pusta', () => {
+    assertEqual(L.maze.pathFromStart(build(4, 4, 1), 4, 0), []);
+    assertEqual(L.maze.pathFromStart(build(4, 4, 1), -1, 2), []);
+  });
 })();
