@@ -324,9 +324,19 @@ button:focus-visible {
   font-weight: 700;
 }
 
+/* Krótka lista stoi na środku jak inne ekrany. Długa zaczyna się od góry i da się ją przewinąć:
+   automatyczne marginesy znikają, gdy brakuje miejsca, więc góra tabeli nie ucieka poza ekran. */
 .screen[data-screen="records"] {
   justify-content: flex-start;
   overflow-y: auto;
+}
+
+.screen[data-screen="records"] > :first-child {
+  margin-top: auto;
+}
+
+.screen[data-screen="records"] > :last-child {
+  margin-bottom: auto;
 }
 
 .records {

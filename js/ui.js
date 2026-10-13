@@ -70,8 +70,12 @@
     doc.documentElement.dataset.screen = name;
     for (const screen of doc.querySelectorAll('.screen')) screen.hidden = screen.dataset.screen !== name;
     if (doc.activeElement && doc.activeElement !== doc.body) doc.activeElement.blur();
+    // Ekran zawsze od góry. Kursor trafia na wskazany przycisk bez przewijania do niego,
+    // bo na długiej liście rekordów przycisk Wróć jest pod tabelą.
+    const shown = doc.querySelector(`.screen[data-screen="${name}"]`);
+    if (shown) shown.scrollTop = 0;
     const target = doc.querySelector(`.screen[data-screen="${name}"] [data-autofocus]`);
-    if (target) target.focus();
+    if (target) target.focus({ preventScroll: true });
   }
 
   // level: poziom przerwanej gry do wznowienia albo null.
