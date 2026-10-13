@@ -1,21 +1,24 @@
+/* Motyw "mapa skarbów": ciemny to mapa nocą przy świecy, jasny to mapa w świetle dziennym. */
 :root {
-  --bg: #10141c;
-  --fg: #e6e9ef;
-  --muted: #a9b1c1;
-  --accent: #4cc2ff;
-  --panel: #1b2230;
-  --overlay: rgba(16, 20, 28, 0.88);
+  --bg: #2a170a;
+  --map: url("../img/mapa-ciemna.webp");
+  --fg: #f3e6c8;
+  --muted: #d8c29a;
+  --accent: #e8b04a;
+  --panel: rgba(26, 14, 5, 0.72);
+  --overlay: rgba(42, 23, 10, 0.88);
   --star: #f2c94c;
 }
 
 :root[data-theme="light"] {
-  --bg: #f7f7f4;
-  --fg: #1d2330;
-  --muted: #4a5263;
-  --accent: #0a66c2;
-  --panel: #e7e8e3;
-  --overlay: rgba(247, 247, 244, 0.92);
-  --star: #9a6700;
+  --bg: #e9d3a8;
+  --map: url("../img/mapa-jasna.webp");
+  --fg: #2b1d10;
+  --muted: #5e4630;
+  --accent: #9b2c1c;
+  --panel: rgba(226, 195, 145, 0.82);
+  --overlay: rgba(240, 217, 176, 0.92);
+  --star: #8a5a00;
 }
 
 * {
@@ -33,7 +36,7 @@ body {
 }
 
 body {
-  background: var(--bg);
+  background: var(--bg) var(--map) center / cover no-repeat;
   color: var(--fg);
   font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   overflow: hidden;
@@ -108,8 +111,12 @@ button:focus-visible {
   gap: 8px;
 }
 
+/* Tło pod napisami, bo przy górnej krawędzi mapy są rysunki, liny i drewno stołu. */
 .hud {
   width: 100%;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--panel);
   display: flex;
   flex-wrap: wrap;
   align-items: center;

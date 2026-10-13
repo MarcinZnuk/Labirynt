@@ -4,9 +4,12 @@
   const PAD = 2;
   const MIN_CELL = 4;
 
+  // Plansza leży na obrazie mapy: tło planszy to półprzezroczysta warstwa koloru pergaminu
+  // (krycie BOARD_ALPHA), która wyrównuje rysunki pod ścianami, ale zostawia mapę widoczną.
+  const BOARD_ALPHA = 0.6;
   const THEMES = {
-    dark: { background: '#10141c', wall: '#e6e9ef', player: '#4cc2ff', exit: '#5ee07a' },
-    light: { background: '#f7f7f4', wall: '#1d2330', player: '#0a66c2', exit: '#1a8f3c' },
+    dark: { background: '#3e220c', wall: '#f3e6c8', player: '#4cc2ff', exit: '#5ee07a' },
+    light: { background: '#f0d9b0', wall: '#2b1d10', player: '#0a66c2', exit: '#1a8f3c' },
   };
 
   function cellSize(availWidth, availHeight, cols, rows) {
@@ -45,8 +48,11 @@
     const WALL = L.maze.WALL;
 
     ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
+    ctx.clearRect(0, 0, view.cssWidth, view.cssHeight);
+    ctx.globalAlpha = BOARD_ALPHA;
     ctx.fillStyle = colors.background;
     ctx.fillRect(0, 0, view.cssWidth, view.cssHeight);
+    ctx.globalAlpha = 1;
 
     const inset = Math.max(1, Math.round(cell * 0.2));
     ctx.fillStyle = colors.exit;
